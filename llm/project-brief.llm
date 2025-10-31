@@ -1,0 +1,153 @@
+# TLDR-Pro — Project Context Summary
+
+## 🎯 Goal
+Create a daily **“Master TLDR Newsletter”** compiled automatically from multiple TLDR newsletter editions (Tech, Programming, AI, Design, DevOps, Business, Marketing, etc.).  
+
+You already subscribe to all editions — they’re delivered early every morning to  
+`tldr@byjohnmichael.com` (hosted via **iCloud Mail**).  
+At ~11:00 AM daily, the system should collect all TLDR emails from the past 24 hours, extract their stories, select the best ones based on your preferences, and send you one clean, custom TLDR digest.
+
+---
+
+## 🧠 Desired Daily Flow
+
+1. **Login to iCloud IMAP**
+   - Use Apple’s IMAP: `imap.mail.me.com:993`
+   - Credentials: your Apple ID email (`byjohnmichael@icloud.com`) + app-specific password.
+   - Folder: `TLDR` (created by an iCloud rule that moves mail sent to `tldr@byjohnmichael.com`).
+
+2. **Collect incoming newsletters**
+   - Search for messages **from** `@tldrnewsletter.com` within the last 24 hours (11 → 11 window).
+   - Fetch the raw HTML content of each email.
+
+3. **Parse each newsletter**
+   - Extract:
+     - `edition` (e.g., DevOps, Programming, etc.)
+     - `issue_date`
+     - `section` (e.g., News & Trends, Resources & Tools)
+     - `title`, `blurb`, `canonical_url`
+     - optional: `minutes_read`, `sponsor`, `position`
+   - Decode TLDR tracking URLs into canonical URLs.
+   - Output a normalized list of JSON items per newsletter.
+
+4. **Merge and deduplicate**
+   - Combine all newsletters from that window.
+   - Remove duplicates by canonical URL or near-duplicate title.
+   - Normalize and assign deterministic IDs like  
+     `devops-2025-10-20-news-001`.
+
+5. **AI selection & synthesis**
+   - Apply your preferences (heavy on Tech, Programming, AI, Design; light on DevOps, Business, Marketing).
+   - The AI or rule-based selector scores items and picks ~10-12.
+   - Generate one **Master TLDR**:
+     - Quick intro
+     - Grouped sections
+     - Concise 1-2-sentence blurbs
+     - Canonical links
+     - Optional “why selected”
+
+6. **Email the digest**
+   - Send via iCloud SMTP (`smtp.mail.me.com:587`)  
+     **From:** `tldr@byjohnmichael.com`  
+     **To:** your personal inbox.
+
+7. **Post-process**
+   - Archive or delete the original TLDR messages after successful send.
+   - Log run metadata (date, number of items, etc.).
+
+---
+
+## ⚙️ Current Setup
+
+- **Working IMAP connection confirmed** using `imap.mail.me.com` and an app-specific password.  
+- All aliases (`jm@byjohnmichael.com`, `tldr@byjohnmichael.com`, `byjohnmichael@icloud.com`) route to the same iCloud inbox.
+- **iCloud Mail Rule:**  
+  “If addressed to `tldr@byjohnmichael.com` → move to folder `TLDR`.”
+
+---
+
+## 📁 Simplified File Structure
+
+```
+tldr-pro/
+├─ README.md
+├─ .env.example
+├─ requirements.txt
+└─ src/
+   ├─ app.py          # main orchestrator
+   ├─ settings.py     # env + constants loader (✅ finished)
+   ├─ mail.py         # IMAP/SMTP utilities
+   ├─ parse_tldr.py   # parse HTML newsletters → normalized JSON items
+   ├─ merge.py        # dedupe + scoring/selection
+   └─ render.py       # compose final HTML/text email
+```
+
+---
+
+## 🧩 `settings.py` Overview (already written)
+
+**Purpose:** centralizes configuration and computes the 11 → 11 daily window.
+
+**Key env vars:**
+```
+EMAIL=byjohnmichael@icloud.com
+APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
+IMAP_FOLDER=TLDR
+FROM_ALIAS=tldr@byjohnmichael.com
+TO_ADDRESS=your_personal_email@example.com
+RUN_TZ=America/New_York
+WINDOW_START_HOUR=11
+WINDOW_END_HOUR=11
+MAX_ITEMS=12
+WEIGHTS_JSON={"tech":0.9,"programming":0.9,"ai":0.9,"design":0.7,"devops":0.3,"business":0.3,"marketing":0.2}
+DELETE_MODE=archive
+FROM_DOMAIN=tldrnewsletter.com
+```
+
+Use with:
+```python
+from settings import get_settings
+settings = get_settings()
+start, end = settings.window_range()
+```
+
+---
+
+## 🧰 Next Steps (in dev order)
+
+1. ✅ `settings.py`  
+2. 🧾 `mail.py` — login, search, fetch HTMLs, send/cleanup  
+3. 🪶 `parse_tldr.py` — convert HTML → JSON items  
+4. 🔍 `merge.py` — dedupe + rank by weights  
+5. 📰 `render.py` — build and return email subject + HTML  
+6. 🚀 `app.py` — orchestrate entire flow  
+7. 🧠 Integrate AI for story selection (optional at first; rule-based fallback)  
+
+---
+
+## 🗃️ Example Parsed Item (JSON)
+
+```json
+{
+  "edition": "devops",
+  "issue_date": "2025-10-20",
+  "section": "News & Trends",
+  "title": "Ingest OTLP metrics directly into Datadog...",
+  "blurb": "Datadog has launched a new OTLP Metrics API...",
+  "canonical_url": "https://www.datadoghq.com/blog/otlp-metrics-api/",
+  "minutes_read": 3,
+  "sponsor": false,
+  "source": "TLDR DevOps",
+  "id": "devops-2025-10-20-news-001"
+}
+```
+
+---
+
+## 🧭 Design Goals
+
+- **Automation-first:** no manual cleanup; runs once daily at 11 AM.  
+- **Human-style summary:** keeps the TLDR tone and layout.  
+- **Configurable:** edition weights and cleanup policy.  
+- **Safe:** defaults to *archive* instead of delete.  
+- **Extensible:** easy to plug in OpenAI/Anthropic later for selection or summarization.

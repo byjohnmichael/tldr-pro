@@ -1,1 +1,8 @@
-.DS_store
+# Files: Environment Variables and macOS System Files
+.DS_Store
+.env
+
+# Directories: Python Virtual Environment/Cache
+__pycache__/
+.venv/
+# By John Michael
