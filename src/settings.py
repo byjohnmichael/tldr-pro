@@ -28,9 +28,6 @@ def ensure_env_file():
     config["IMAP_PORT"]         = input("IMAP port (default: 993): ").strip() or "993"
     config["SMTP_HOST"]         = input("SMTP host: ").strip()
     config["SMTP_PORT"]         = input("SMTP port (default: 587): ").strip() or "587"
-
-    print("\nAdditional Settings:")
-    config["EXECUTION_HOUR"]    = input("Hour to run the executor(24-hour format): ").strip()
     
     # Write to .env
     print(f"\nCreating .env file...")
@@ -54,11 +51,9 @@ def get_settings():
     IMAP_PORT       = int(os.getenv("IMAP_PORT", "993"))    # IMAP port
     SMTP_HOST       = os.getenv("SMTP_HOST")                # SMTP host
     SMTP_PORT       = int(os.getenv("SMTP_PORT", "587"))    # SMTP port
-    EXECUTION_HOUR  = os.getenv("EXECUTION_HOUR")           # Hour to run the program
 
-
-    if not all([EMAIL, APP_PASSWORD, FOLDER, FROM_ALIAS, TO_ALIAS, IMAP_HOST, SMTP_HOST, EXECUTION_HOUR]):
-        raise ValueError("Missing required environment variables. Required variables: EMAIL\nAPP_PASSWORD\nFOLDER\nFROM_ALIAS\nTO_ALIAS\nIMAP_HOST\nSMTP_HOST\nEXECUTION_HOUR")
+    if not all([EMAIL, APP_PASSWORD, FOLDER, FROM_ALIAS, TO_ALIAS, IMAP_HOST, SMTP_HOST]):
+        raise ValueError("Missing required environment variables. Required variables:\nEMAIL\nAPP_PASSWORD\nFOLDER\nFROM_ALIAS\nTO_ALIAS\nIMAP_HOST\nSMTP_HOST")
     
     # Settings object to hold everythign and return
     class Settings:
@@ -71,6 +66,5 @@ def get_settings():
         imap_port       = IMAP_PORT
         smtp_host       = SMTP_HOST
         smtp_port       = SMTP_PORT
-        execution_hour  = EXECUTION_HOUR
     
     return Settings() # By John Michael
