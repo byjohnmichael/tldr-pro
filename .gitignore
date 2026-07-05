@@ -5,4 +5,5 @@
 # Directories: Python Virtual Environment/Cache
 __pycache__/
 .venv/
+tests/output/*.html
 # By John Michael
