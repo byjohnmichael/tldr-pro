@@ -1,0 +1,16 @@
+# Your TLDR Pro settings. Edit this file (on GitHub is fine) — the next daily run picks it up.
+
+to_email: jm@byjohnmichael.com
+
+preferences:
+  # Any of: tech, dev, ai, infosec, product, devops, founders, design,
+  #         marketing, crypto, fintech, data
+  editions: [tech, dev, ai, infosec, product, devops, founders, design,
+             marketing, crypto, fintech, data]
+
+  content_type: both        # breakthroughs | stories | both
+  digest_length: medium     # short (5) | medium (10) | long (18)
+
+  interest_tags: []         # e.g. [LLMs, open source, Rust]
+  exclude_topics: []        # e.g. [crypto prices, layoffs]
+  custom_instructions: ""   # free text passed straight to the curator

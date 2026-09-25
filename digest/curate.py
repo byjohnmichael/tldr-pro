@@ -3,6 +3,8 @@ import os
 from typing import List, Dict, Optional
 import anthropic
 
+from digest.editions import ALL_SLUGS
+
 # Article counts per digest length setting
 DIGEST_LENGTH_MAP = {
     "short":  5,
@@ -10,10 +12,9 @@ DIGEST_LENGTH_MAP = {
     "long":   18,
 }
 
-# Default preferences used when running for a single user (Phase 1 / local testing)
+# Defaults for any key missing from config.yaml
 DEFAULT_PREFERENCES = {
-    "editions":             ["tech", "dev", "ai", "infosec", "product", "devops",
-                             "founders", "design", "marketing", "crypto", "fintech", "data"],
+    "editions":             ALL_SLUGS,
     "content_type":         "both",
     "digest_length":        "medium",
     "interest_tags":        [],
@@ -48,20 +49,9 @@ def filter_articles_for_user(articles: List[Dict], preferences: Dict) -> List[Di
     return filtered
 
 
-def build_feedback_summary(feedback: List[Dict]) -> Dict[str, List[str]]:
-    """
-    Summarizes recent feedback into liked/disliked title lists for the AI prompt.
-    feedback items: {"article_title": str, "action": "more_like_this" | "not_interested"}
-    """
-    liked = [f["article_title"] for f in feedback if f.get("action") == "more_like_this"]
-    disliked = [f["article_title"] for f in feedback if f.get("action") == "not_interested"]
-    return {"liked": liked[:10], "disliked": disliked[:10]}  # cap to keep prompt lean
-
-
 def curate_for_user(
     articles: List[Dict],
     preferences: Optional[Dict] = None,
-    feedback: Optional[List[Dict]] = None,
 ) -> Dict:
     """
     Calls Claude Haiku to select the best articles for a user.
@@ -73,7 +63,6 @@ def curate_for_user(
         }
     """
     prefs = {**DEFAULT_PREFERENCES, **(preferences or {})}
-    feedback = feedback or []
 
     filtered = filter_articles_for_user(articles, prefs)
     if not filtered:
@@ -94,10 +83,6 @@ def curate_for_user(
         for a in filtered
     ]
 
-    feedback_summary = build_feedback_summary(feedback)
-    liked_str = ", ".join(f'"{t}"' for t in feedback_summary["liked"]) or "none yet"
-    disliked_str = ", ".join(f'"{t}"' for t in feedback_summary["disliked"]) or "none yet"
-
     tags_str = ", ".join(prefs["interest_tags"]) or "none specified"
     exclude_str = ", ".join(prefs["exclude_topics"]) or "none"
     custom_str = prefs["custom_instructions"] or "none"
@@ -110,7 +95,7 @@ def curate_for_user(
 
     system_prompt = (
         "You are a newsletter curator. Your job is to select the best articles for a specific user "
-        "based on their preferences and feedback history. Return only valid JSON — no explanation, "
+        "based on their preferences. Return only valid JSON — no explanation, "
         "no markdown, just the JSON object."
     )
 
@@ -121,8 +106,6 @@ User preferences:
 - Interest tags (prioritize these topics): {tags_str}
 - Exclude topics (avoid these): {exclude_str}
 - Custom instructions: {custom_str}
-- Feedback — previously liked: {liked_str}
-- Feedback — previously disliked: {disliked_str}
 
 Available articles ({len(article_pool)} total):
 {json.dumps(article_pool, indent=2)}
@@ -154,7 +137,8 @@ Return this JSON and nothing else:
     if "selected_ids" not in result or "intro" not in result:
         raise ValueError(f"Unexpected response shape from Haiku: {raw}")
 
-    # Cap to target_count in case the model returns more
-    result["selected_ids"] = result["selected_ids"][:target_count]
+    # Drop any IDs the model invented, then cap to target_count
+    valid_ids = {a["id"] for a in filtered}
+    result["selected_ids"] = [i for i in result["selected_ids"] if i in valid_ids][:target_count]
 
     return result

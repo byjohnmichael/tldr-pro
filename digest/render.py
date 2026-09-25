@@ -1,7 +1,8 @@
 from typing import List, Dict
-from datetime import datetime
+from datetime import date
+from html import escape
 
-from shared.editions import EDITIONS
+from digest.editions import EDITIONS
 
 # Edition slug → display name lookup
 EDITION_NAMES = {e["slug"]: e["name"] for e in EDITIONS}
@@ -11,9 +12,7 @@ EDITION_EMOJIS = {e["slug"]: (e["emoji"] or "") for e in EDITIONS}
 def render_digest(
     articles: List[Dict],
     intro: str,
-    user_token: str,
-    unsubscribe_token: str,
-    api_base_url: str = "https://api.tldrpro.com",
+    issue_date: str,
 ) -> tuple[str, str]:
     """
     Builds the HTML digest email.
@@ -21,7 +20,7 @@ def render_digest(
     Returns:
         (subject, html_body)
     """
-    today = datetime.now().strftime("%B %d, %Y")
+    today = date.fromisoformat(issue_date).strftime("%B %d, %Y")
     subject = f"Your TLDR Pro Digest — {today}"
 
     # Group articles by section for display
@@ -44,25 +43,18 @@ def render_digest(
 
             blurb_html = ""
             if article.get("blurb"):
-                blurb_html = f'<p style="margin:6px 0 0 0;color:#444;font-size:14px;line-height:1.5;">{article["blurb"]}</p>'
-
-            feedback_url_more = f'{api_base_url}/feedback?u={user_token}&a={article["id"]}&v=more'
-            feedback_url_less = f'{api_base_url}/feedback?u={user_token}&a={article["id"]}&v=less'
+                blurb_html = f'<p style="margin:6px 0 0 0;color:#444;font-size:14px;line-height:1.5;">{escape(article["blurb"])}</p>'
 
             articles_html += f"""
             <div style="margin-bottom:24px;">
               <p style="margin:0 0 2px 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
                 {edition_emoji} {edition_label}
               </p>
-              <a href="{article['canonical_url']}"
+              <a href="{escape(article['canonical_url'])}"
                  style="font-size:16px;font-weight:600;color:#1a1a1a;text-decoration:none;line-height:1.3;">
-                {article['title']}
+                {escape(article['title'])}
               </a>{read_time}
               {blurb_html}
-              <p style="margin:8px 0 0 0;font-size:12px;">
-                <a href="{feedback_url_more}" style="color:#888;text-decoration:none;margin-right:12px;">👍 More like this</a>
-                <a href="{feedback_url_less}" style="color:#888;text-decoration:none;">👎 Not interested</a>
-              </p>
             </div>"""
 
         sections_html += f"""
@@ -70,7 +62,7 @@ def render_digest(
           <td style="padding:8px 0 4px 0;">
             <h2 style="margin:0;font-size:13px;font-weight:700;text-transform:uppercase;
                        letter-spacing:1px;color:#555;border-bottom:1px solid #eee;padding-bottom:8px;">
-              {section_name}
+              {escape(section_name)}
             </h2>
           </td>
         </tr>
@@ -79,8 +71,6 @@ def render_digest(
             {articles_html}
           </td>
         </tr>"""
-
-    unsubscribe_url = f"{api_base_url}/unsubscribe/{unsubscribe_token}"
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -111,7 +101,7 @@ def render_digest(
           <tr>
             <td style="padding:24px 32px 16px 32px;border-bottom:1px solid #f0f0f0;">
               <p style="margin:0;font-size:15px;color:#333;line-height:1.6;font-style:italic;">
-                {intro}
+                {escape(intro)}
               </p>
             </td>
           </tr>
@@ -129,8 +119,8 @@ def render_digest(
           <tr>
             <td style="padding:24px 32px;border-top:1px solid #f0f0f0;text-align:center;">
               <p style="margin:0;font-size:12px;color:#aaa;">
-                You're receiving this because you signed up for TLDR Pro.<br>
-                <a href="{unsubscribe_url}" style="color:#aaa;">Unsubscribe</a>
+                Curated from <a href="https://tldr.tech" style="color:#aaa;">tldr.tech</a>.
+                Edit config.yaml to change what you get.
               </p>
             </td>
           </tr>
