@@ -1,7 +1,6 @@
 import json
-import os
+import subprocess
 from typing import List, Dict, Optional
-import anthropic
 
 from digest.editions import ALL_SLUGS
 
@@ -117,21 +116,8 @@ Return this JSON and nothing else:
   "intro": "One sentence personalized intro for today's digest (conversational tone, no fluff)"
 }}"""
 
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=512,
-        messages=[{"role": "user", "content": user_prompt}],
-        system=system_prompt,
-    )
-
-    raw = message.content[0].text.strip()
-
-    # Strip markdown code fences if the model adds them despite instructions
-    raw = raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-
-    result = json.loads(raw)
+    raw = ask_claude(system_prompt, user_prompt)
+    result = json.loads(raw[raw.index("{"):raw.rindex("}") + 1])
 
     # Validate structure
     if "selected_ids" not in result or "intro" not in result:
@@ -142,3 +128,21 @@ Return this JSON and nothing else:
     result["selected_ids"] = [i for i in result["selected_ids"] if i in valid_ids][:target_count]
 
     return result
+
+
+def ask_claude(system_prompt: str, user_prompt: str) -> str:
+    """
+    Runs Claude Code headless on your Claude plan (no API key). Auth comes from
+    CLAUDE_CODE_OAUTH_TOKEN (create with `claude setup-token`) or your local login.
+    """
+    proc = subprocess.run(
+        ["claude", "-p", "--model", "haiku", "--output-format", "json",
+         "--tools", "", "--system-prompt", system_prompt],
+        input=user_prompt, capture_output=True, text=True, timeout=300,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"claude CLI failed: {proc.stderr.strip() or proc.stdout.strip()}")
+    response = json.loads(proc.stdout)
+    if response.get("is_error"):
+        raise RuntimeError(f"claude CLI error: {response.get('result')}")
+    return response["result"]

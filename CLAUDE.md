@@ -30,8 +30,8 @@ tldr-pro/
 ```
 
 ## Stack
-- Python 3.12, requests, BeautifulSoup4, anthropic SDK, PyYAML
-- **AI:** Claude Haiku (`claude-haiku-4-5-20251001`)
+- Python 3.12, requests, BeautifulSoup4, PyYAML
+- **AI:** Claude Haiku via headless Claude Code (`claude -p --model haiku`) on the Claude plan — no API key
 - **Send:** iCloud SMTP `smtp.mail.me.com:587` STARTTLS, From `tldr@byjohnmichael.com`
 - **Scheduler:** GitHub Actions. A failed run emails the repo owner automatically.
 
@@ -53,7 +53,7 @@ The rendered HTML is uploaded as the `digest` artifact on every run.
 
 | Variable | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Anthropic API key |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Claude plan token from `claude setup-token` (not needed locally if logged in) |
 | `ICLOUD_EMAIL` | iCloud login used for SMTP |
 | `ICLOUD_APP_PASSWORD` | App-specific password |
 | `FROM_EMAIL` | Optional, defaults to `tldr@byjohnmichael.com` |

@@ -9,7 +9,7 @@ care about buried among ones you don't. TLDR Pro reads all of today's issues and
 ```
 GitHub Actions, every morning (14:00 UTC)
   1. Fetch   today's issues from https://tldr.tech/{edition}/{date}
-  2. Curate  Claude Haiku picks N articles using config.yaml
+  2. Curate  Claude Haiku (via Claude Code on your Claude plan) picks N articles using config.yaml
   3. Render  one clean HTML email, grouped by section
   4. Send    via iCloud SMTP
 ```
@@ -18,7 +18,7 @@ No inbox access, no database, no server. If something breaks, the Action fails a
 
 ## Setup
 
-1. Add repository secrets: `ANTHROPIC_API_KEY`, `ICLOUD_EMAIL`, `ICLOUD_APP_PASSWORD`
+1. Run `claude setup-token` on your computer, then add repository secrets: `CLAUDE_CODE_OAUTH_TOKEN`, `ICLOUD_EMAIL`, `ICLOUD_APP_PASSWORD`
    (an app-specific password).
 2. Edit `config.yaml` with your email and preferences.
 3. Actions → **Daily digest** → **Run workflow**, with *dry run* checked the first time. The
