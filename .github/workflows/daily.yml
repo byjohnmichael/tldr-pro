@@ -24,10 +24,11 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+      - run: npm install -g @anthropic-ai/claude-code
       - run: pytest -q tests
       - name: Build and send digest
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ICLOUD_EMAIL: ${{ secrets.ICLOUD_EMAIL }}
           ICLOUD_APP_PASSWORD: ${{ secrets.ICLOUD_APP_PASSWORD }}
           DATE: ${{ inputs.date }}
