@@ -133,3 +133,5 @@ def render_digest(
 </html>"""
 
     return subject, html
+
+# byjohnmichael*

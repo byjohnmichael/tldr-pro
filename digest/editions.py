@@ -38,3 +38,5 @@ SECTION_CONTENT_TYPE = {
 def content_type_for_section(section_name: str) -> str:
     """Returns 'breakthroughs', 'stories', or 'both' for a section name."""
     return SECTION_CONTENT_TYPE.get(section_name.lower().strip(), "both")
+
+# byjohnmichael*
