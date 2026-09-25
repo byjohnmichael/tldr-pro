@@ -1,0 +1,45 @@
+name: Daily digest
+
+on:
+  schedule:
+    - cron: "0 14 * * *"   # 6 AM PST / 7 AM PDT
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Issue date YYYY-MM-DD (blank = today)"
+        required: false
+      dry_run:
+        description: "Render only, don't send"
+        type: boolean
+        default: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pytest -q tests
+      - name: Build and send digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ICLOUD_EMAIL: ${{ secrets.ICLOUD_EMAIL }}
+          ICLOUD_APP_PASSWORD: ${{ secrets.ICLOUD_APP_PASSWORD }}
+          DATE: ${{ inputs.date }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=()
+          [ -n "$DATE" ] && args+=(--date "$DATE")
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          python -m digest.main "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: digest
+          path: out/digest.html
+          if-no-files-found: ignore
