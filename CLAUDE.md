@@ -9,6 +9,12 @@ that match the preferences in `config.yaml`, and emails one digest via iCloud SM
 It's built to need almost no upkeep: no database, no server, no inbox, no web app. It's
 stateless, so each run stands on its own.
 
+**Where it's headed:** today it runs only on GitHub Actions. Later it should also run on a
+schedule on a local machine, or as a hosted service. Keep the pipeline (`digest/`) independent
+of GitHub Actions. The workflow should stay a thin wrapper around `python -m digest.main`, with
+all configuration coming from env vars and `config.yaml`, so moving to another host only means
+changing the scheduler.
+
 ---
 
 ## Layout
@@ -26,6 +32,7 @@ tldr-pro/
 ├── tests/
 │   ├── test_fetch.py            # parser tests (no network)
 │   └── fixtures/ai-sample.html  # SYNTHETIC — replace with a real saved tldr.tech page
+├── pytest.ini                   # puts the project root on sys.path for `pytest`
 └── .github/workflows/daily.yml  # cron 0 14 * * * (6 AM PST / 7 AM PDT) + manual trigger
 ```
 
@@ -54,7 +61,7 @@ The rendered HTML is uploaded as the `digest` artifact on every run.
 | Variable | Purpose |
 |---|---|
 | `CLAUDE_CODE_OAUTH_TOKEN` | Claude plan token from `claude setup-token` (not needed locally if logged in) |
-| `ICLOUD_EMAIL` | iCloud login used for SMTP |
+| `ICLOUD_EMAIL` | iCloud SMTP login: the Apple ID / `@icloud.com` address, **not** a custom-domain alias (that gives `535 authentication failed`) |
 | `ICLOUD_APP_PASSWORD` | App-specific password |
 | `FROM_EMAIL` | Optional, defaults to `tldr@byjohnmichael.com` |
 | `TO_EMAIL` | Optional override of `to_email` in `config.yaml` |
@@ -75,8 +82,8 @@ The first three are GitHub repository secrets; locally they go in `.env`.
   (or the leftover text) gives the blurb. The section comes from the nearest `h2`/`h3` above it
   that isn't inside an article.
 - `utm_*` params are stripped; articles are deduped by URL across editions; sponsors are skipped.
-- **The selectors were written without access to the live site.** Verify them against a real
-  page and replace the synthetic fixture with it.
+- The selectors work against the live site (verified by real runs). The test fixture is still
+  synthetic, though, so swap in a real saved page when convenient.
 
 ## Article schema
 
@@ -97,4 +104,10 @@ The first three are GitHub repository secrets; locally they go in `.env`.
 
 ## Conventions
 - Run from the project root; modules import as `digest.x`.
-- Keep it stateless and single-user. Don't add a database or server unless the requirements change.
+- Keep it stateless and single-user for now. Don't add a database or server until the move to
+  local/hosted running actually calls for it.
+- Before sending, `main.run` checks that `to_email` and the iCloud secrets are set, so a
+  misconfigured run fails immediately instead of after the fetch and Haiku call.
+- Every hand-written source file ends with a blank line and then the signature `byjohnmichael*`
+  in that file's comment syntax (`# byjohnmichael*`, `// byjohnmichael*`,
+  `<!-- byjohnmichael* -->`). Config, docs and test fixtures don't get one.
