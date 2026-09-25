@@ -146,3 +146,5 @@ def ask_claude(system_prompt: str, user_prompt: str) -> str:
     if response.get("is_error"):
         raise RuntimeError(f"claude CLI error: {response.get('result')}")
     return response["result"]
+
+# byjohnmichael*

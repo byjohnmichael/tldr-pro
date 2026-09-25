@@ -33,3 +33,5 @@ def send_digest(to_email: str, subject: str, html: str) -> bool:
     except Exception as e:
         print(f"  ERROR: Failed to send email to {to_email}: {e}")
         return False
+
+# byjohnmichael*
