@@ -36,6 +36,13 @@ def run(issue_date: str, dry_run: bool = False) -> None:
     preferences = config.get("preferences") or {}
     to_email = os.environ.get("TO_EMAIL") or config.get("to_email")
 
+    if not dry_run:
+        if not to_email:
+            sys.exit("ERROR: set to_email in config.yaml (or TO_EMAIL env var)")
+        missing = [v for v in ("ICLOUD_EMAIL", "ICLOUD_APP_PASSWORD") if not os.environ.get(v)]
+        if missing:
+            sys.exit(f"ERROR: {', '.join(missing)} not set (GitHub repository secrets, or .env locally)")
+
     print(f"TLDR Pro — issue date {issue_date}")
 
     print("\n[1/4] Fetching issues from tldr.tech...")
@@ -60,8 +67,6 @@ def run(issue_date: str, dry_run: bool = False) -> None:
         print("\n[4/4] Dry run — not sending.")
         return
 
-    if not to_email:
-        sys.exit("ERROR: set to_email in config.yaml (or TO_EMAIL env var)")
     print(f"\n[4/4] Sending to {to_email}...")
     if not send_digest(to_email, subject, html):
         sys.exit(1)
